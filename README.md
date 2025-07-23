@@ -480,7 +480,7 @@ def robust_task(**context):
 #### 1. DAG Not Appearing in UI
 - Check DAG syntax: `python dags/your_dag.py`
 - Verify DAG is in the correct directory
-- Check Airflow logs: `docker-compose logs airflow-scheduler`
+- Check Airflow logs: `docker compose logs airflow-scheduler`
 
 #### 2. Task Failures
 - Check task logs in the Airflow UI
