@@ -44,13 +44,13 @@ echo -e "AIRFLOW_UID=$(id -u)" > .env
 ### Step 4: Initialize the Database
 
 ```bash
-docker-compose up airflow-init
+docker compose up airflow-init
 ```
 
 ### Step 5: Start Airflow Services
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 The services will be available at:
@@ -495,13 +495,13 @@ def robust_task(**context):
 #### 4. Database Connection Issues
 ```bash
 # Check database connectivity
-docker-compose exec airflow-webserver airflow db check
+docker compose exec airflow-webserver airflow db check
 
 # Reset database if needed
-docker-compose down
+docker compose down
 docker volume rm airflow-tutorial_postgres-db-volume
-docker-compose up airflow-init
-docker-compose up -d
+docker compose up airflow-init
+docker compose up -d
 ```
 
 #### 5. Performance Issues
@@ -513,19 +513,19 @@ docker-compose up -d
 
 ```bash
 # View logs
-docker-compose logs -f airflow-scheduler
-docker-compose logs -f airflow-webserver
+docker compose logs -f airflow-scheduler
+docker compose logs -f airflow-webserver
 
 # Execute commands in containers
-docker-compose exec airflow-webserver airflow dags list
-docker-compose exec airflow-webserver airflow tasks list your_dag_id
+docker compose exec airflow-webserver airflow dags list
+docker compose exec airflow-webserver airflow tasks list your_dag_id
 
 # Test specific tasks
-docker-compose exec airflow-webserver airflow tasks test your_dag_id your_task_id 2025-01-01
+docker compose exec airflow-webserver airflow tasks test your_dag_id your_task_id 2025-01-01
 
 # Restart services
-docker-compose restart airflow-scheduler
-docker-compose restart airflow-webserver
+docker compose restart airflow-scheduler
+docker compose restart airflow-webserver
 ```
 
 ## Conclusion
