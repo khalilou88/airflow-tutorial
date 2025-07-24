@@ -55,14 +55,14 @@ docker compose up -d
 
 The services will be available at:
 
-- **Airflow Webserver**: http://localhost:8080
+- **Airflow Apiserver**: http://localhost:8080
 - **Default credentials**: Username: `airflow`, Password: `airflow`
 
 ## 2. Understanding the Docker Compose Configuration {#docker-config}
 
 The official docker-compose.yaml includes these key services:
 
-- **airflow-webserver**: The web UI
+- **airflow-apiserver**: The web UI
 - **airflow-scheduler**: Schedules and triggers tasks
 - **airflow-worker**: Executes tasks (in CeleryExecutor mode)
 - **airflow-triggerer**: Handles deferrable tasks
@@ -163,9 +163,9 @@ hello_task >> world_task >> bash_task
 
 ```bash
 # Test individual tasks
-docker compose exec airflow-webserver airflow tasks test hello_world_dag hello_task 2025-01-23
-docker compose exec airflow-webserver airflow tasks test hello_world_dag world_task 2025-01-23
-docker compose exec airflow-webserver airflow tasks test hello_world_dag bash_task 2025-01-23
+docker compose exec airflow-apiserver airflow tasks test hello_world_dag hello_task 2025-01-23
+docker compose exec airflow-apiserver airflow tasks test hello_world_dag world_task 2025-01-23
+docker compose exec airflow-apiserver airflow tasks test hello_world_dag bash_task 2025-01-23
 ```
 
 ### TaskFlow API (Modern Approach)
@@ -360,7 +360,7 @@ quality_check >> [high_quality_task, standard_quality_task, quality_failure_task
 
 ```bash
 # Create the file the sensor is waiting for
-docker compose exec airflow-webserver touch /tmp/input_data.txt
+docker compose exec airflow-apiserver touch /tmp/input_data.txt
 ```
 
 #### Testing workflow:
@@ -574,7 +574,7 @@ def robust_task(**context):
 
 ```bash
 # Check database connectivity
-docker compose exec airflow-webserver airflow db check
+docker compose exec airflow-apiserver airflow db check
 
 # Reset database if needed
 docker compose down
@@ -594,25 +594,25 @@ docker compose up -d
 ```bash
 # View logs
 docker compose logs -f airflow-scheduler
-docker compose logs -f airflow-webserver
+docker compose logs -f airflow-apiserver
 
 # Execute commands in containers
-docker compose exec airflow-webserver airflow dags list
-docker compose exec airflow-webserver airflow tasks list your_dag_id
+docker compose exec airflow-apiserver airflow dags list
+docker compose exec airflow-apiserver airflow tasks list your_dag_id
 
 # Test specific tasks
-docker compose exec airflow-webserver airflow tasks test your_dag_id your_task_id 2025-01-01
+docker compose exec airflow-apiserver airflow tasks test your_dag_id your_task_id 2025-01-01
 
 # Restart services
 docker compose restart airflow-scheduler
-docker compose restart airflow-webserver
+docker compose restart airflow-apiserver
 ```
 
 ## 7. General Testing Best Practices
 
 ### Pre-Testing Checklist
 
-1. **Syntax Check**: `docker compose exec airflow-webserver python /opt/airflow/dags/your_dag.py`
+1. **Syntax Check**: `docker compose exec airflow-apiserver python /opt/airflow/dags/your_dag.py`
 2. **DAG Validation**: Look for red error indicators in UI
 3. **Import Check**: Verify no import errors in scheduler logs
 
@@ -656,7 +656,7 @@ docker compose restart airflow-webserver
 
 - **Task-specific logs**: Click task → View Log
 - **Scheduler logs**: `docker compose logs airflow-scheduler`
-- **Webserver logs**: `docker compose logs airflow-webserver`
+- **Apiserver logs**: `docker compose logs airflow-apiserver`
 
 ### Performance Testing Tips
 
@@ -695,13 +695,13 @@ docker compose restart airflow-webserver
 
 ```bash
 # Check DAG bag errors
-docker-compose exec airflow-webserver airflow dags list-import-errors
+docker-compose exec airflow-apiserver airflow dags list-import-errors
 
 # Test DAG parsing
-docker-compose exec airflow-webserver airflow dags show your_dag_id
+docker-compose exec airflow-apiserver airflow dags show your_dag_id
 
 # Check task instance status
-docker-compose exec airflow-webserver airflow tasks state your_dag_id your_task_id 2025-01-23
+docker-compose exec airflow-apiserver airflow tasks state your_dag_id your_task_id 2025-01-23
 ```
 
 ## 8. Testing Checklist Summary
