@@ -1,4 +1,4 @@
-# Apache Airflow DAG Tutorial with Docker Compose
+# Apache Airflow DAG Tutorial with Docker Compose (2025)
 
 This comprehensive tutorial will guide you through setting up Apache Airflow with the latest version using Docker Compose and creating your first DAGs (Directed Acyclic Graphs).
 
@@ -15,8 +15,9 @@ This comprehensive tutorial will guide you through setting up Apache Airflow wit
 2. [Understanding the Docker Compose Configuration](#docker-config)
 3. [Creating Your First DAG](#first-dag)
 4. [Advanced DAG Examples](#advanced-examples)
-5. [Best Practices](#best-practices)
-6. [Troubleshooting](#troubleshooting)
+5. [Testing Your DAGs](#testing-dags)
+6. [Best Practices](#best-practices)
+7. [Troubleshooting](#troubleshooting)
 
 ## 1. Setting up Apache Airflow with Docker Compose {#setup}
 
@@ -55,15 +56,16 @@ docker compose up -d
 
 The services will be available at:
 
-- **Airflow Apiserver**: http://localhost:8080
+- **Airflow Webserver**: http://localhost:8080
 - **Default credentials**: Username: `airflow`, Password: `airflow`
 
 ## 2. Understanding the Docker Compose Configuration {#docker-config}
 
 The official docker-compose.yaml includes these key services:
 
-- **airflow-apiserver**: The web UI
+- **airflow-apiserver**: The web UI and REST API server
 - **airflow-scheduler**: Schedules and triggers tasks
+- **airflow-dag-processor**: Processes and parses DAG files
 - **airflow-worker**: Executes tasks (in CeleryExecutor mode)
 - **airflow-triggerer**: Handles deferrable tasks
 - **postgres**: Database backend
@@ -81,7 +83,7 @@ environment:
 
 ## 3. Creating Your First DAG {#first-dag}
 
-### Basic DAG Structure : Hello World DAG
+### Basic DAG Structure: Hello World DAG
 
 Create a file `dags/hello_world_dag.py`:
 
@@ -145,29 +147,6 @@ bash_task = BashOperator(
 hello_task >> world_task >> bash_task
 ```
 
-#### Before running:
-
-- Ensure the DAG appears in UI (wait 30-60 seconds after creating the file)
-- Check for syntax errors in the Files tab
-
-#### Testing steps:
-
-1. Go to Airflow UI → DAGs page
-2. Find "hello_world_dag" and toggle it ON
-3. Click on the DAG name → Graph view
-4. Click "Trigger DAG" button (play icon)
-5. Watch tasks turn from white → yellow → green
-6. Click each task to view logs and verify output
-
-#### Command line testing:
-
-```bash
-# Test individual tasks
-docker compose exec airflow-apiserver airflow tasks test hello_world_dag hello_task 2025-01-23
-docker compose exec airflow-apiserver airflow tasks test hello_world_dag world_task 2025-01-23
-docker compose exec airflow-apiserver airflow tasks test hello_world_dag bash_task 2025-01-23
-```
-
 ### TaskFlow API (Modern Approach)
 
 Create `dags/taskflow_example.py`:
@@ -225,19 +204,6 @@ def taskflow_example():
 # Instantiate the DAG
 taskflow_dag = taskflow_example()
 ```
-
-#### Testing approach:
-
-1. Enable the DAG in UI
-2. Trigger manually first time
-3. Verify data flow between tasks by checking logs
-4. Look for the XCom data exchange in task logs
-
-#### Validation points:
-
-- Extract task should show: `{"users": [1, 2, 3, 4, 5]}`
-- Transform task should show processed user objects
-- Load task should print each user with timestamp
 
 ## 4. Advanced DAG Examples {#advanced-examples}
 
@@ -356,26 +322,6 @@ quality_check >> [high_quality_task, standard_quality_task, quality_failure_task
 [high_quality_task, standard_quality_task, quality_failure_task] >> join_task >> notify_completion
 ```
 
-#### Prerequisites setup:
-
-```bash
-# Create the file the sensor is waiting for
-docker compose exec airflow-apiserver touch /tmp/input_data.txt
-```
-
-#### Testing workflow:
-
-1. Enable DAG and trigger
-2. Watch the file sensor (should complete quickly since file exists)
-3. Observe branching - it will randomly pick one of three paths
-4. Check which branch was taken in the Graph view
-5. Re-trigger multiple times to see different branches
-
-#### Troubleshooting the sensor:
-
-- If sensor keeps running, verify file exists in container
-- Check sensor logs for file path issues
-
 ### Dynamic DAG Generation
 
 Create `dags/dynamic_dag_example.py`:
@@ -438,6 +384,78 @@ for db in DATABASES:
     globals()[f'process_{db}_dag'] = create_processing_dag(db)
 ```
 
+## 5. Testing Your DAGs {#testing-dags}
+
+### Pre-Testing Checklist
+
+1. **Syntax Check**: `docker compose exec airflow-apiserver python /opt/airflow/dags/your_dag.py`
+2. **DAG Validation**: Look for red error indicators in UI
+3. **Import Check**: Verify no import errors in scheduler logs
+
+### Testing the Hello World DAG
+
+#### Before running:
+
+- Ensure the DAG appears in UI (wait 30-60 seconds after creating the file)
+- Check for syntax errors in the Files tab
+
+#### Testing steps:
+
+1. Go to Airflow UI → DAGs page
+2. Find "hello_world_dag" and toggle it ON
+3. Click on the DAG name → Graph view
+4. Click "Trigger DAG" button (play icon)
+5. Watch tasks turn from white → yellow → green
+6. Click each task to view logs and verify output
+
+#### Command line testing:
+
+```bash
+# Test individual tasks
+docker compose exec airflow-apiserver airflow tasks test hello_world_dag hello_task 2025-01-23
+docker compose exec airflow-apiserver airflow tasks test hello_world_dag world_task 2025-01-23
+docker compose exec airflow-apiserver airflow tasks test hello_world_dag bash_task 2025-01-23
+```
+
+### Testing the TaskFlow Example
+
+#### Testing approach:
+
+1. Enable the DAG in UI
+2. Trigger manually first time
+3. Verify data flow between tasks by checking logs
+4. Look for the XCom data exchange in task logs
+
+#### Validation points:
+
+- Extract task should show: `{"users": [1, 2, 3, 4, 5]}`
+- Transform task should show processed user objects
+- Load task should print each user with timestamp
+
+### Testing the Advanced Pipeline
+
+#### Prerequisites setup:
+
+```bash
+# Create the file the sensor is waiting for
+docker compose exec airflow-apiserver touch /tmp/input_data.txt
+```
+
+#### Testing workflow:
+
+1. Enable DAG and trigger
+2. Watch the file sensor (should complete quickly since file exists)
+3. Observe branching - it will randomly pick one of three paths
+4. Check which branch was taken in the Graph view
+5. Re-trigger multiple times to see different branches
+
+#### Troubleshooting the sensor:
+
+- If sensor keeps running, verify file exists in container
+- Check sensor logs for file path issues
+
+### Testing Dynamic DAGs
+
 #### Verification steps:
 
 1. Look for 4 separate DAGs in the UI:
@@ -456,7 +474,74 @@ for db in DATABASES:
 
 3. Test parallel execution by triggering multiple DAGs simultaneously
 
-## 5. Best Practices {#best-practices}
+### Systematic Testing Approach
+
+#### Phase 1 - Individual Task Testing
+
+- Test each task in isolation using `airflow tasks test`
+- Verify task logic works correctly
+- Check for proper error handling
+
+#### Phase 2 - DAG Flow Testing
+
+- Enable DAG and trigger once
+- Monitor execution flow in Graph view
+- Verify task dependencies execute in correct order
+
+#### Phase 3 - Schedule Testing
+
+- Let DAG run on schedule (or use backfill for faster testing)
+- Check multiple runs don't overlap incorrectly
+- Verify catchup behavior
+
+#### Phase 4 - Failure Testing
+
+- Intentionally cause task failures (modify code temporarily)
+- Verify retry behavior works
+- Test task failure notifications
+
+### Monitoring During Tests
+
+#### Key places to check:
+
+1. **Graph View**: Visual task status and flow
+2. **Gantt Chart**: Task timing and overlaps
+3. **Task Logs**: Detailed execution information
+4. **Code View**: Verify DAG structure
+5. **Landing Times**: Schedule adherence
+
+#### Log locations:
+
+- **Task-specific logs**: Click task → View Log
+- **Scheduler logs**: `docker compose logs airflow-scheduler`
+- **API Server logs**: `docker compose logs airflow-apiserver`
+
+### Testing Checklist Summary
+
+#### ✅ Before Testing Any DAG:
+
+- [ ] Services are running (`docker compose ps`)
+- [ ] DAG appears in UI without errors
+- [ ] Syntax check passes
+- [ ] Required files/dependencies exist
+
+#### ✅ For Each DAG:
+
+- [ ] Enable DAG in UI
+- [ ] Trigger manual run
+- [ ] Monitor execution in Graph view
+- [ ] Check task logs for expected output
+- [ ] Verify task dependencies work correctly
+- [ ] Test failure scenarios
+
+#### ✅ After Testing:
+
+- [ ] Document any issues found
+- [ ] Verify performance is acceptable
+- [ ] Check for resource leaks
+- [ ] Confirm scheduling works as expected
+
+## 6. Best Practices {#best-practices}
 
 ### DAG Design Principles
 
@@ -548,7 +633,30 @@ def robust_task(**context):
         cleanup_resources()
 ```
 
-## 6. Troubleshooting {#troubleshooting}
+### Performance and Testing Best Practices
+
+1. **Load Testing**: Trigger multiple DAG runs simultaneously
+2. **Resource Monitoring**: Check Docker container resource usage
+3. **Database Performance**: Monitor postgres container during heavy loads
+4. **Memory Usage**: Watch for memory leaks in long-running tests
+
+#### Automated Testing Setup
+
+**Create test scripts:**
+
+1. Write shell scripts to trigger DAGs and check status
+2. Use Airflow REST API for automated testing
+3. Set up alerts for test failures
+4. Create test data fixtures for consistent testing
+
+**Example test validation:**
+
+- Check DAG completes within expected time
+- Verify all tasks reach success state
+- Validate output data/logs contain expected content
+- Ensure no tasks are skipped unexpectedly
+
+## 7. Troubleshooting {#troubleshooting}
 
 ### Common Issues and Solutions
 
@@ -589,6 +697,16 @@ docker compose up -d
 - Use appropriate parallelism settings
 - Consider using different executors for different workloads
 
+#### 6. Testing Failed Tests
+
+**Common issues to check:**
+
+1. **Task hanging**: Check for infinite loops or missing timeouts
+2. **Import errors**: Verify all dependencies are available in container
+3. **Permission issues**: Check file/directory permissions
+4. **Resource limits**: Ensure adequate memory/CPU allocation
+5. **Network issues**: Verify external service connectivity
+
 ### Useful Commands
 
 ```bash
@@ -606,130 +724,16 @@ docker compose exec airflow-apiserver airflow tasks test your_dag_id your_task_i
 # Restart services
 docker compose restart airflow-scheduler
 docker compose restart airflow-apiserver
-```
 
-## 7. General Testing Best Practices
-
-### Pre-Testing Checklist
-
-1. **Syntax Check**: `docker compose exec airflow-apiserver python /opt/airflow/dags/your_dag.py`
-2. **DAG Validation**: Look for red error indicators in UI
-3. **Import Check**: Verify no import errors in scheduler logs
-
-### Systematic Testing Approach
-
-#### Phase 1 - Individual Task Testing
-
-- Test each task in isolation using `airflow tasks test`
-- Verify task logic works correctly
-- Check for proper error handling
-
-#### Phase 2 - DAG Flow Testing
-
-- Enable DAG and trigger once
-- Monitor execution flow in Graph view
-- Verify task dependencies execute in correct order
-
-#### Phase 3 - Schedule Testing
-
-- Let DAG run on schedule (or use backfill for faster testing)
-- Check multiple runs don't overlap incorrectly
-- Verify catchup behavior
-
-#### Phase 4 - Failure Testing
-
-- Intentionally cause task failures (modify code temporarily)
-- Verify retry behavior works
-- Test task failure notifications
-
-### Monitoring During Tests
-
-#### Key places to check:
-
-1. **Graph View**: Visual task status and flow
-2. **Gantt Chart**: Task timing and overlaps
-3. **Task Logs**: Detailed execution information
-4. **Code View**: Verify DAG structure
-5. **Landing Times**: Schedule adherence
-
-#### Log locations:
-
-- **Task-specific logs**: Click task → View Log
-- **Scheduler logs**: `docker compose logs airflow-scheduler`
-- **Apiserver logs**: `docker compose logs airflow-apiserver`
-
-### Performance Testing Tips
-
-1. **Load Testing**: Trigger multiple DAG runs simultaneously
-2. **Resource Monitoring**: Check Docker container resource usage
-3. **Database Performance**: Monitor postgres container during heavy loads
-4. **Memory Usage**: Watch for memory leaks in long-running tests
-
-### Automated Testing Setup
-
-#### Create test scripts:
-
-1. Write shell scripts to trigger DAGs and check status
-2. Use Airflow REST API for automated testing
-3. Set up alerts for test failures
-4. Create test data fixtures for consistent testing
-
-#### Example test validation:
-
-- Check DAG completes within expected time
-- Verify all tasks reach success state
-- Validate output data/logs contain expected content
-- Ensure no tasks are skipped unexpectedly
-
-### Troubleshooting Failed Tests
-
-#### Common issues to check:
-
-1. **Task hanging**: Check for infinite loops or missing timeouts
-2. **Import errors**: Verify all dependencies are available in container
-3. **Permission issues**: Check file/directory permissions
-4. **Resource limits**: Ensure adequate memory/CPU allocation
-5. **Network issues**: Verify external service connectivity
-
-#### Quick debugging commands:
-
-```bash
 # Check DAG bag errors
-docker-compose exec airflow-apiserver airflow dags list-import-errors
+docker compose exec airflow-apiserver airflow dags list-import-errors
 
 # Test DAG parsing
-docker-compose exec airflow-apiserver airflow dags show your_dag_id
+docker compose exec airflow-apiserver airflow dags show your_dag_id
 
 # Check task instance status
-docker-compose exec airflow-apiserver airflow tasks state your_dag_id your_task_id 2025-01-23
+docker compose exec airflow-apiserver airflow tasks state your_dag_id your_task_id 2025-01-23
 ```
-
-## 8. Testing Checklist Summary
-
-### ✅ Before Testing Any DAG:
-
-- [ ] Services are running (`docker compose ps`)
-- [ ] DAG appears in UI without errors
-- [ ] Syntax check passes
-- [ ] Required files/dependencies exist
-
-### ✅ For Each DAG:
-
-- [ ] Enable DAG in UI
-- [ ] Trigger manual run
-- [ ] Monitor execution in Graph view
-- [ ] Check task logs for expected output
-- [ ] Verify task dependencies work correctly
-- [ ] Test failure scenarios
-
-### ✅ After Testing:
-
-- [ ] Document any issues found
-- [ ] Verify performance is acceptable
-- [ ] Check for resource leaks
-- [ ] Confirm scheduling works as expected
-
-This testing approach ensures each DAG works correctly individually and integrates properly with the Airflow environment.
 
 ## Conclusion
 
@@ -740,6 +744,7 @@ This tutorial covered the essentials of setting up Apache Airflow with Docker Co
 3. Follow best practices for maintainable and reliable workflows
 4. Implement proper error handling and monitoring
 5. Use dynamic DAG generation for scalable architectures
+6. Test thoroughly using the systematic testing approach
 
 For production deployments, consider additional factors like security, scaling, monitoring, and backup strategies. The Docker Compose setup shown here is excellent for development and learning, but production environments may require Kubernetes or other orchestration platforms.
 
